@@ -1,95 +1,78 @@
-import mysql.connector
-from mysql.connector import errorcode
+import psycopg2
+from psycopg2 import sql
 import os
+import random
+import string
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
+POSTGRES_URI = os.getenv("POSTGRES_URI")
 
-MYSQL_HOST = "localhost"
-MYSQL_USER = os.getenv("SQL_USER")
-MYSQL_PASSWORD = os.getenv("SQL_PASSWORD")  
-
-def connect_to_mysql():
+def connect_to_postgres():
     try:
-        connection = mysql.connector.connect(
-            host=MYSQL_HOST,
-            user=MYSQL_USER,
-            password=MYSQL_PASSWORD
-        )
-        print("Connected to MySQL server.")
+        connection = psycopg2.connect(POSTGRES_URI)
+        print("Connected to Supabase.")
         return connection
-    
-    except mysql.connector.Error as err:
-        print(f"Error connecting to MySQL: {err}")
+    except Exception as e:
+        print("Connection failed:", e)
         return None
 
-def create_database(cursor, db_name="email_db"):
+def print_users(cursor, n=10):
     try:
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
-        print(f"Database '{db_name}' created or already exists.")
-        cursor.execute(f"USE {db_name}")
-    except mysql.connector.Error as err:
-        print(f"Error creating database: {err}")
-
-def create_users_table(cursor):
-    try:
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(100),
-                email VARCHAR(255) UNIQUE
-            )
-        """)
-        print("Table 'users' created or already exists.")
-    except mysql.connector.Error as err:
-        print(f"Error creating table: {err}")
-
-def insert_users(cursor, connection):
-    try:
-        insert_query = """
-            INSERT INTO users (name, email)
-            VALUES (%s, %s)
-        """
-        values = [
-            ('vibhor', 'vibhor.1bhatia@gmail.com')
-        ]
-        cursor.executemany(insert_query, values)
-        connection.commit()
-        print("user data inserted.")
-    except mysql.connector.Error as err:
-        print(f"Error inserting data: {err}")
-
-def print_first_10_users(cursor):
-    try:
-        cursor.execute("SELECT * FROM users LIMIT 10")
+        cursor.execute(f'SELECT "EmpNum", "Name", "Email" FROM "Users" LIMIT {n}')
         rows = cursor.fetchall()
-        
         if not rows:
-            print("No users found in the table.")
+            print("No users found.")
             return
-
         for row in rows:
-            print(f"ID: {row[0]} \t Name: {row[1]} \t Email: {row[2]}")
+            print(f"EmpNum: {row[0]} \t Name: {row[1]} \t Email: {row[2]}")
+    except Exception as e:
+        print(f"Error fetching users: {e}")
 
-    except mysql.connector.Error as err:
-        print(f"Error fetching users: {err}")
+
+def generate_random_user():
+    # Generate a random date in the range 01-05-2025 to 11-05-2025
+    start_date = datetime(2025, 5, 1)
+    end_date = datetime(2025, 6, 11)
+    delta_days = (end_date - start_date).days
+    random_days = random.randint(0, delta_days)
+    last_update = start_date + timedelta(days=random_days)
+
+    name = ''.join(random.choices(string.ascii_letters, k=6))
+    email = f"{name.lower()}@example.com"
+    password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+
+    return (last_update, name, email, password)
+
+
+def insert_random_users(cursor, connection, n=10):
+    try:
+        insert_query = '''
+            INSERT INTO "Users" ("LastUpdate", "Name", "Email", "Password")
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT ("Email") DO NOTHING
+        '''
+        users = [generate_random_user() for _ in range(n)]
+        cursor.executemany(insert_query, users)
+        connection.commit()
+        print(f"Inserted {n} random users.")
+    except Exception as e:
+        print(f"Error inserting users: {e}")
 
 def main():
-    connection = connect_to_mysql()
+    connection = connect_to_postgres()
     if connection is None:
         return
 
     try:
         cursor = connection.cursor()
-        create_database(cursor)
-        create_users_table(cursor)
-        insert_users(cursor, connection)
-        print_first_10_users(cursor)
+        insert_random_users(cursor, connection, 10)
+        print_users(cursor, 20)
     finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-            print("MySQL connection closed.")
+        cursor.close()
+        connection.close()
+        print("Connection closed.")
 
 if __name__ == "__main__":
     main()
