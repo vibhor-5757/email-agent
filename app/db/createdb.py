@@ -30,7 +30,6 @@ def print_users(cursor, n=10):
     except Exception as e:
         print(f"Error fetching users: {e}")
 
-
 def generate_random_user():
     # Generate a random date in the range 01-05-2025 to 11-05-2025
     start_date = datetime(2025, 5, 1)
@@ -60,6 +59,20 @@ def insert_random_users(cursor, connection, n=10):
     except Exception as e:
         print(f"Error inserting users: {e}")
 
+def create_password_reset_tokens_table(cursor, connection):
+    try:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS "PasswordResetTokens" (
+                "token" TEXT PRIMARY KEY,
+                "emp_num" INTEGER NOT NULL REFERENCES "users"("emp_num") ON DELETE CASCADE,
+                "expiry" TIMESTAMP NOT NULL
+            );
+        ''')
+        connection.commit()
+        print("Checked or created table 'PasswordResetTokens'.")
+    except Exception as e:
+        print(f"Error creating PasswordResetTokens table: {e}")
+
 def main():
     connection = connect_to_postgres()
     if connection is None:
@@ -67,8 +80,9 @@ def main():
 
     try:
         cursor = connection.cursor()
-        insert_random_users(cursor, connection, 10)
-        print_users(cursor, 20)
+        # insert_random_users(cursor, connection, 10)
+        # print_users(cursor, 20)
+        create_password_reset_tokens_table(cursor, connection)
     finally:
         cursor.close()
         connection.close()
