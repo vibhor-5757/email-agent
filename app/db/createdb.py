@@ -73,6 +73,61 @@ def create_password_reset_tokens_table(cursor, connection):
     except Exception as e:
         print(f"Error creating PasswordResetTokens table: {e}")
 
+def create_templates_table(cursor, connection):
+    try:
+        # Drop the table if it exists
+        cursor.execute('DROP TABLE IF EXISTS "Templates" CASCADE;')
+        print("Dropped existing 'Templates' table (if any).")
+
+        # Now create the table again
+        cursor.execute('''
+            CREATE TABLE "Templates" (
+                "template_id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                "name" TEXT UNIQUE NOT NULL,
+                "subject" TEXT NOT NULL,
+                "content" TEXT NOT NULL
+            );
+        ''')
+        connection.commit()
+        print("Created new 'Templates' table with subject column.")
+    except Exception as e:
+        print(f"Error creating Templates table: {e}")
+
+
+
+def insert_template(cursor, connection, name, subject, content):
+    try:
+        insert_query = '''
+            INSERT INTO "Templates" ("name", "subject", "content")
+            VALUES (%s, %s, %s)
+            ON CONFLICT ("name") DO NOTHING
+        '''
+        cursor.execute(insert_query, (name, subject, content))
+        connection.commit()
+        print(f"Inserted template: {name}")
+    except Exception as e:
+        print(f"Error inserting template: {e}")
+
+
+template_name = "password_expiry_reminder"
+template_subject = "Your Password Will Expire in 5 Days"
+template_content = """
+Dear {{name}},
+
+This is a reminder that your account password is set to expire in 5 days.
+
+To maintain access to your account and ensure your security, please reset your password as soon as possible using the link below:
+
+Reset Password: {{reset_link}}
+
+If you have already updated your password, please disregard this message.
+
+Thank you,
+Support Team
+"""
+
+
+
 def main():
     connection = connect_to_postgres()
     if connection is None:
@@ -83,6 +138,9 @@ def main():
         # insert_random_users(cursor, connection, 10)
         # print_users(cursor, 20)
         create_password_reset_tokens_table(cursor, connection)
+        create_templates_table(cursor, connection)
+        insert_template(cursor, connection, template_name, template_subject, template_content)
+
     finally:
         cursor.close()
         connection.close()
