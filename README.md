@@ -30,10 +30,8 @@ This system is well-suited for organizations looking to automate internal commun
 
 ## System Architecture
 
-> A visual representation of the email agent workflow can be placed here.
 
-```text
-[Insert your diagram here]
+
 ![Agent Flow Diagram](images/agent_flow.png)
 ```
 
