@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langgraph
+langchain
+langchain-google-genai
+psycopg2-binary
+python-dotenv
+sendgrid
+streamlit
