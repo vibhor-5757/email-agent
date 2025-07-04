@@ -33,9 +33,6 @@ This system is well-suited for organizations looking to automate internal commun
 
 
 ![Agent Flow Diagram](images/agent_flow.png)
-```
-
----
 ##  Project Structure
 
 ```sh
